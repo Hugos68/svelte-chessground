@@ -1,40 +1,47 @@
 <script lang="ts">
+	import './styles/base.css';
+	import './styles/board.css';
+	import './styles/pieces.css';
 	import { Chessground } from 'chessground';
+	import { untrack } from 'svelte';
 	import type { Api } from 'chessground/api';
 	import type { Config } from 'chessground/config';
-	import { untrack } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	interface Props extends HTMLAttributes<HTMLDivElement> {
 		/**
-		 * The config that will be passed into the `Chessground` function
-		 * @default null
+		 * The config that is passed into the `Chessground` function
+		 * @default undefined
 		 */
 		config?: Config | undefined;
 		/**
 		 * The api returned from the `Chessground` function
-		 * @default null
+		 * @default undefined
 		 */
 		chessground?: Api | undefined;
 		/**
 		 * Callback once the `Chessground` has initialized
 		 * @param chessground The chessground instance
-		 * @default null
+		 * @default undefined
 		 */
 		onready?: ((chessground: Api) => unknown) | undefined;
+		/**
+		 * The element that is passed into the `Chessground` function
+		 * @default undefined
+		 */
+		element?: HTMLElement | undefined;
 	}
 
 	let {
 		config = undefined,
-		chessground = $bindable(undefined),
+		chessground = $bindable(),
 		onready = undefined,
+		element = $bindable(),
 		...attributes
 	}: Props = $props();
 
-	let element: HTMLElement | null = $state(null);
-
 	const initialize_chessground = () => {
-		if (element === null) {
+		if (element === undefined) {
 			return;
 		}
 		chessground = Chessground(element, config);
@@ -62,4 +69,4 @@
 	});
 </script>
 
-<div bind:this={element} {...attributes}></div>
+<div style="width: 500px; height: 500px;" bind:this={element} {...attributes}></div>

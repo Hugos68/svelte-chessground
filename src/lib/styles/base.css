@@ -1,17 +1,3 @@
-.cg-wrap {
-	box-sizing: content-box;
-	position: relative;
-	display: block;
-}
-
-cg-container {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	display: block;
-	top: 0;
-}
-
 cg-board {
 	position: absolute;
 	top: 0;
