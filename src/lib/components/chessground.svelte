@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { initial } from 'chessground/fen';
-	import ChessgroundBase from './components/chessground-base.svelte';
-	import { dismiss } from './utils/dismiss.js';
-	import { is_promotion, promotion_roles } from './utils/promotion.js';
+	import ChessgroundBase from './chessground-base.svelte';
+	import { dismiss } from '../utils/dismiss.js';
+	import { is_promotion, promotion_roles } from '../utils/promotion.js';
 	import type { Api } from 'chessground/api';
 	import type { Config } from 'chessground/config';
 	import type { Key, Piece, PiecesDiff } from 'chessground/types';
-	import type { PromotionRole } from './utils/promotion.js';
+	import type { PromotionRole } from '../utils/promotion.js';
 
 	interface Promotion {
 		piece: Piece;

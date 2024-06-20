@@ -1,2 +1,2 @@
-export { default as Chessground } from './chessground.svelte';
-export { default as ChessgroundBase } from './chessground-base.svelte';
+export { default as Chessground } from './components/chessground.svelte';
+export { default as ChessgroundBase } from './components/chessground-base.svelte';
