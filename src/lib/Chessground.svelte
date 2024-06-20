@@ -1,62 +1,66 @@
 <script lang="ts">
-	import { Chessground } from 'chessground';
-	import type { Api } from 'chessground/api';
+	import { initial } from 'chessground/fen';
+	import BaseChessground from './chessground-base.svelte';
 	import type { Config } from 'chessground/config';
-	import { untrack } from 'svelte';
-	import type { HTMLAttributes } from 'svelte/elements';
+	import type { Api } from 'chessground/api';
+	import type { Key, Piece } from 'chessground/types';
 
-	interface Props extends HTMLAttributes<HTMLDivElement> {
+	interface Props {
 		/**
-		 * The config that will be passed into the `Chessground` function
-		 * @default {}
+		 * The FEN representation of the board
 		 */
-		config?: Config;
+		fen?: string | undefined;
+
 		/**
-		 * The api returned from the `Chessground` function
-		 * @default undefined
+		 * Callback called when a move on the board occurs
 		 */
-		chessground?: Api;
-		/**
-		 * Callback once the `Chessground` has initialized
-		 * @param chessground The chessground instance
-		 * @default () => {}
-		 */
-		onready?: (chessground: Api) => unknown;
+		onmove?: Required<Config>['events']['move'];
 	}
 
-	let {
-		config = {},
-		chessground = $bindable(undefined),
-		onready = () => {},
-		...attributes
-	}: Props = $props();
+	let { fen = $bindable(initial), onmove }: Props = $props();
 
-	let element: HTMLElement | null = $state(null);
+	let chessground: Api | undefined = $state(undefined);
+	let show_promotion_popover = $state(false);
 
-	const initialize_chessground = () => {
-		if (!element) {
-			return;
+	const is_promotion = (piece: Piece, from: Key, to: Key) => {
+		if (piece.role !== 'pawn') {
+			return false;
 		}
-		chessground = Chessground(element, config);
-		onready(chessground);
+
+		const rank = parseInt(to[1]);
+		const promotion_rank = piece.color === 'white' ? 1 : 7;
+
+		return promotion_rank === rank;
 	};
 
-	const update_chessground = () => {
-		if (!chessground) {
-			return;
+	const config: Config = $derived({
+		fen,
+		events: {
+			change: () => {
+				if (!chessground) {
+					return;
+				}
+				fen = chessground.getFen();
+			},
+			move: (from, to, captured) => {
+				if (!chessground) {
+					return;
+				}
+				const piece = chessground.state.pieces.get(to);
+				if (!piece) {
+					return;
+				}
+				if (is_promotion(piece, from, to)) {
+					show_promotion_popover = true;
+					return;
+				}
+				if (onmove === undefined) {
+					return;
+				}
+				onmove(from, to, captured);
+			}
 		}
-		chessground.set(config);
-	};
-
-	$effect(() =>
-		untrack(() => {
-			initialize_chessground();
-		})
-	);
-
-	$effect(() => {
-		update_chessground();
 	});
 </script>
 
-<div bind:this={element} {...attributes}></div>
+<BaseChessground bind:chessground {config} />
