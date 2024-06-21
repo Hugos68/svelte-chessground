@@ -1,7 +1,4 @@
 <script lang="ts">
-	import './styles/base.css';
-	import './styles/board.css';
-	import './styles/pieces.css';
 	import { Chessground } from 'chessground';
 	import { untrack } from 'svelte';
 	import type { Api } from 'chessground/api';
@@ -11,20 +8,20 @@
 	interface Props extends HTMLAttributes<HTMLDivElement> {
 		/**
 		 * The config that is passed into the `Chessground` function
-		 * @default undefined
+		 * @default {}
 		 */
 		config?: Config | undefined;
-		/**
-		 * The api returned from the `Chessground` function
-		 * @default undefined
-		 */
-		chessground?: Api | undefined;
 		/**
 		 * Callback once the `Chessground` has initialized
 		 * @param chessground The chessground instance
 		 * @default undefined
 		 */
 		onready?: ((chessground: Api) => unknown) | undefined;
+		/**
+		 * The api returned from the `Chessground` function
+		 * @default undefined
+		 */
+		chessground?: Api | undefined;
 		/**
 		 * The element that is passed into the `Chessground` function
 		 * @default undefined
@@ -33,9 +30,9 @@
 	}
 
 	let {
-		config = undefined,
+		config = {},
 		chessground = $bindable(),
-		onready = undefined,
+		onready,
 		element = $bindable(),
 		...attributes
 	}: Props = $props();

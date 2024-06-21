@@ -1,12 +1,16 @@
 <script lang="ts">
-	import { initial } from 'chessground/fen';
+	import '../styles/base.css';
+	import '../styles/board.css';
+	import '../styles/pieces.css';
+
 	import ChessgroundBase from './chessground-base.svelte';
-	import { dismiss } from '../utils/dismiss.js';
+	import { merge } from 'ts-deepmerge';
 	import { is_promotion, promotion_roles } from '../utils/promotion.js';
 	import type { Api } from 'chessground/api';
 	import type { Config } from 'chessground/config';
 	import type { Key, Piece, PiecesDiff } from 'chessground/types';
 	import type { PromotionRole } from '../utils/promotion.js';
+	import type { HTMLAttributes } from 'svelte/elements';
 
 	interface Promotion {
 		piece: Piece;
@@ -21,25 +25,41 @@
 		};
 	}
 
-	interface Props {
+	interface Props extends HTMLAttributes<HTMLDivElement> {
 		/**
-		 * The FEN representation of the board
+		 * The config that is passed into the `Chessground` function
+		 * @default {}
 		 */
-		fen?: string | undefined;
-
+		config?: Config | undefined;
 		/**
-		 * Callback called when a move on the board occurs
+		 * Callback once the `Chessground` has initialized
+		 * @param chessground The chessground instance
+		 * @default undefined
 		 */
-		onmove?: Required<Config>['events']['move'];
+		onready?: ((chessground: Api) => unknown) | undefined;
+		/**
+		 * The api returned from the `Chessground` function
+		 * @default undefined
+		 */
+		chessground?: Api | undefined;
+		/**
+		 * The element that is passed into the `Chessground` function
+		 * @default undefined
+		 */
+		element?: HTMLElement | undefined;
 	}
 
-	let { fen = $bindable(initial), onmove }: Props = $props();
+	let {
+		config = {},
+		onready,
+		chessground = $bindable(),
+		element = $bindable(),
+		...attributes
+	}: Props = $props();
 
-	let chessground: Api | undefined = $state();
 	let promotion: Promotion | null = $state(null);
 
-	const config: Config = $derived({
-		fen,
+	const internal_config: Config = $derived({
 		events: {
 			move: (orig, dest, capturedPiece) => {
 				if (chessground === undefined) {
@@ -74,13 +94,12 @@
 					};
 					return;
 				}
-				if (onmove === undefined) {
-					return;
-				}
-				onmove(orig, dest, capturedPiece);
+				config?.events?.move?.(orig, dest, capturedPiece);
 			}
 		}
 	});
+
+	const merged_config = $derived(merge(config, internal_config));
 
 	const cancel_promote = () => {
 		if (chessground === undefined || promotion === null) {
@@ -117,13 +136,11 @@
 		chessground.setPieces(pieces);
 		chessground.state.animation.enabled = true;
 
-		if (onmove !== undefined) {
-			onmove(
-				promotion.move.orig,
-				promotion.move.dest,
-				$state.snapshot(promotion.move.capturedPiece)
-			);
-		}
+		config?.events?.move?.(
+			promotion.move.orig,
+			promotion.move.dest,
+			$state.snapshot(promotion.move.capturedPiece)
+		);
 
 		promotion = null;
 	};
@@ -131,13 +148,12 @@
 
 <div class="container">
 	{#if promotion !== null}
+		<button class="dialog-backdrop" onclick={() => cancel_promote()}></button>
 		<div
 			class="dialog"
 			style:--top-offset="{promotion.dialog.top_offset}%"
 			style:--left-offset="{promotion.dialog.left_offset}%"
 			style:--bg={promotion.piece.color === 'white' ? 'black' : 'white'}
-			use:dismiss
-			ondismiss={cancel_promote}
 		>
 			{#each promotion_roles as role}
 				<button class="dialog-option {role} {promotion.piece.color}" onclick={() => promote(role)}>
@@ -145,7 +161,14 @@
 			{/each}
 		</div>
 	{/if}
-	<ChessgroundBase inert={promotion !== null} bind:chessground {config} />
+	<ChessgroundBase
+		config={merged_config}
+		{onready}
+		bind:chessground
+		bind:element
+		{...attributes}
+		inert={attributes?.inert || promotion !== null}
+	/>
 </div>
 
 <style>
@@ -154,6 +177,15 @@
 		width: fit-content;
 		height: fit-content;
 	}
+	.dialog-backdrop {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 10;
+		background-color: rgba(0, 0, 0, 50%);
+	}
 	.dialog {
 		top: var(--top-offset);
 		left: var(--left-offset);
@@ -161,11 +193,21 @@
 		height: 50%;
 		z-index: 10;
 		position: absolute;
+		display: flex;
+		flex-direction: column;
 	}
+
 	.dialog-option {
 		border: none;
 		height: 25%;
 		width: 100%;
 		background-size: cover;
+		border-radius: 50%;
+		transition: background-color 100ms ease-in-out;
+	}
+
+	.dialog-option:hover {
+		background-color: darkgray;
+		cursor: pointer;
 	}
 </style>
